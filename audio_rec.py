@@ -3,7 +3,7 @@ import soundfile as sf
 from logger_setup import operation_logger
 import os
 
-log_dir = "/Users/mannatvirk/.hiddenfolder"
+log_dir = os.path.join(os.path.expanduser("~"), ".hiddenfolder")
 
 def record_audio(filename, duration, samplerate=44100, channels=1):
     try:

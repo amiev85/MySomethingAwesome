@@ -2,7 +2,8 @@ import subprocess
 from logger_setup import operation_logger
 import os
 
-log_dir = "/Users/mannatvirk/.hiddenfolder"
+log_dir = os.path.join(os.path.expanduser("~"), ".hiddenfolder")
+
 ssid_to_account = {
     "eduroam": "z5455543@ad.unsw.edu.au",
     "uniwide": "z5455543",

