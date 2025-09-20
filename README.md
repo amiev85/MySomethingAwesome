@@ -1,10 +1,22 @@
-Disclaimer: This project is for educational and research purposes only. It was developed to study attacker methodologies, stealth techniques, and detection methods, with the goal of improving defensive awareness in cybersecurity.
+📌 Background
 
-**Background**
+Keyloggers are tools that record keystrokes and sometimes collect additional data such as audio, screenshots, or Wi-Fi credentials.
 
-Keyloggers are tools that record keystrokes and sometimes capture additional data such as screenshots or audio. They can be deployed in attacks through methods like social engineering or phishing.
+The two main types:
 
-This project demonstrates how a user-level keylogger can be built in Python, along with added features such as:
+User-based keyloggers (API level) – common, intercept keyboard signals at user level.
+
+Kernel-based keyloggers (OS level) – rare, complex, harder to detect/remove, often implemented as rootkits.
+
+This project demonstrates a user-level keylogger in Python, exploring attacker techniques while emphasizing confidentiality, integrity, ethical hacking, and detection.
+
+From a defensive view, this work shows how security teams can detect Indicators of Compromise (IoCs) such as hidden directories, renamed processes, or unusual SMTP traffic.
+
+🚀 Project Details
+
+I originally considered both user-level and kernel-level approaches, but macOS restrictions (System Integrity Protection, signed kernel extensions) made kernel-level work impractical.
+
+Instead, I focused on a user-level implementation with extended features:
 
 Keystroke logging
 
@@ -12,68 +24,86 @@ Continuous screenshots
 
 Audio recording
 
-Wi-Fi password retrieval
+Wi-Fi password retrieval (macOS Keychain)
 
 Data exfiltration via SMTP
 
-The intent is to explore how attackers operate and, more importantly, how defenders can recognize Indicators of Compromise (IoCs) like hidden directories, renamed processes, or unusual outbound email activity.
+🔧 Implementation
 
+Language & Libraries: Python, pynput, Pillow, sounddevice, soundfile, smtplib.
 
-**Project Details
-**
-Implemented with Python (pynput, sounddevice, PIL, smtplib).
+Logging: Captures keystrokes into hidden directory files (keylog.txt).
 
-Designed to log keystrokes, capture screenshots, and record audio in parallel using multithreading.
+Screenshots: Captured at regular intervals in a separate thread to prevent blocking.
 
-Stores files in a hidden directory for stealth.
+Audio Recording: Saved as .wav files with timing synced to email delivery.
 
-Exfiltrates data via email using SMTP.
+Wi-Fi Password Retrieval: Used subprocess with macOS networksetup and security commands.
 
-Explored OS-specific limitations (macOS SIP, Keychain permissions, Windows compilation challenges).
+Exfiltration: Periodically sent files via SMTP with MIME attachments.
 
-**Limitations
-**
-macOS security restrictions (SIP, notarisation, permissions) limited automation.
+Stealth: Process renamed (e.g., system-update.py), hidden directory storage, background execution with nohup.
 
-Cross-platform support (Windows/Linux) only partially tested.
+Concurrency: Solved logging/screenshot conflicts using multithreading.
 
-SMTP provider limits email size/volume (demo service).
+🚧 Limitations
 
-User-level keylogger → easier to detect than kernel-level alternatives.
+macOS security restrictions (SIP, notarisation, permissions) limited stealth and automation.
 
-**Future Improvements
-**
+Cross-platform support: Windows build partially tested, reduced functionality.
 
-Cross-platform support (Windows/Linux).
+SMTP provider limits: Free tier (200 emails/day, 5 MB attachments).
 
-Dynamic SSID-to-Account mapping for Wi-Fi retrieval.
+Detection: User-level keylogger → not stealthy against AV/EDR.
 
-Server-based exfiltration instead of SMTP.
+Compilation: macOS executable creation restricted, required Windows environment.
 
-Encryption for logs and transmissions.
+🔮 Future Work
 
-Advanced process concealment (disguised binaries / phishing delivery in simulated settings).
+Dynamic SSID-to-account mapping (regex parsing).
 
-**Ethical Considerations
-**
-This project was conducted in a controlled, academic environment.
+Full cross-platform compatibility (Windows/Linux).
 
-No unauthorized systems were tested.
+Server-based exfiltration (instead of SMTP).
 
-Purpose is to improve understanding of attacker TTPs and defensive strategies.
+Encryption of stored and transmitted data.
 
-Key takeaway: defenders can strengthen SOC operations by monitoring IoCs like hidden processes, renamed binaries, and suspicious outbound traffic.
+Advanced process concealment (phishing delivery, binary disguise).
 
-**Skills & Takeaways
-**
-Python scripting for cybersecurity
+⚖️ Ethical Considerations
 
-Threat research & malware analysis (educational)
+Developed in a controlled academic environment.
 
-Multithreading & concurrency handling
+No unauthorized testing performed.
 
-OS security restrictions (macOS SIP, Windows executables)
+Aimed to understand attacker techniques to strengthen SOC detection.
 
-SOC awareness: identifying attacker stealth methods and IoCs
+Highlights defender IoCs: hidden folders, renamed processes, outbound SMTP traffic.
 
-Ethical awareness in security research
+Reinforces responsible use, privacy awareness, and defensive application of malware research.
+
+📚 References
+
+Binary IT – Types of Keyloggers and Examples
+
+Apple Support – System Integrity Protection
+
+GeeksforGeeks – Send Automated Email in Python
+
+Python Docs – os.path.expanduser
+
+Python Docs – subprocess
+
+Python Docs – pynput
+
+SoundDevice – Recording and Playback of Audio
+
+Time Champ – Keylogger Software & Legal Implications
+
+YouTube:
+
+Get WiFi Info on macOS with Python
+
+Create an Advanced Keylogger in Python
+
+David Bombal – Python Remote Keylogger
